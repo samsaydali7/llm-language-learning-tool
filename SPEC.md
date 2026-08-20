@@ -128,13 +128,13 @@ These can be added later.
         |            v
         |       Processing Jobs
         |            |
-        |      +-----+------+
-        |      |            |
-        |      v            v
-        |     QWEN        LLAMA
-        |  EXTRACTION    EXERCISES
-        |      |            |
-        +------+------------+
+        |      +-----+------+-----+
+        |      |                 |
+        |      v                 v
+        |  ADVANCED MODEL       LOCAL MODEL
+        |  EXTRACTION           EXERCISES
+        |      |                 |
+        +------+-----------------+
                |
                v
         KNOWLEDGE BASE
@@ -152,6 +152,8 @@ These can be added later.
        |
        v
  Grammar/Vocabulary Review
+
+The extraction stage may use a stronger or cloud-backed model when accuracy is more important than latency or cost, while the exercise stage is intentionally designed to run with local models for privacy and lower cost. This separation allows the system to optimize different workloads independently.
 
 ## 4. Technology Stack
 
@@ -229,6 +231,8 @@ Claude may be introduced later as an optional provider.
 
 The application must not directly depend on Qwen or Llama implementations.
 
+The abstraction is required because the extraction model and the exercise model have different cost, quality, latency, and privacy requirements. The extraction stage may use a stronger model or a cloud provider when higher-quality knowledge extraction is worth the additional cost, while the exercise stage can remain local for lower latency and privacy. The routing configuration must be adjustable without changing application logic.
+
 Use an abstraction:
 
 public interface LlmProvider {
@@ -259,6 +263,8 @@ LlmProvider
     |
     +-- ClaudeProvider (future)
 
+This design enables model specialization by workload, rather than forcing the same model or provider to handle every stage.
+
 ## 8. Model Routing
 
 Configuration:
@@ -279,3 +285,5 @@ llm:
   grammar-review:
     provider: llama
     model: llama3.1:8b
+
+The configuration must be changeable by environment or deployment. For example, extraction may be moved to a more capable model or external provider in a high-quality setup, while local Llama remains the exercise model for privacy and lower cost. The application must treat this as a runtime configuration concern, not as hard-coded business logic.

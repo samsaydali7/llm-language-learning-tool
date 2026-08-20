@@ -2,17 +2,19 @@
 
 ## Abstract
 
-This project is a private, local-first language learning application built around a simple principle: turn a user’s own study materials and their associated audio into a structured learning system that can generate relevant exercises, review material, and support study by topic, chapter, and source reference.
+This project is an LLM-powered, private, local-first language learning system designed to transform a user’s own study materials and associated audio into a structured learning engine.
 
-The system is designed to be language-agnostic and extensible to other books, languages, and learning materials, as long as the content is owned or legally authorized for the user’s personal study use.
+Instead of building a generic chatbot, the system focuses on a grounded, domain-specific AI workflow: parse educational content, extract language knowledge, preserve source provenance, and generate personalized exercises from the relevant subset of that knowledge.
 
-The goal is not to build a generic chatbot or a public SaaS product. Instead, the project focuses on a personal study workflow that runs privately on the user’s machine, preserves source provenance, and uses local AI models to transform authorized educational content into usable learning knowledge.
+It is designed to be language-agnostic and extensible to other books and languages, as long as the content is owned or legally authorized for the user's personal study use.
+
+The project demonstrates practical AI product thinking around ingestion, extraction, context selection, grounding, knowledge modeling, and local model orchestration.
 
 ## Problem
 
-Most language learners study from books, PDF course materials, and audio resources, but these assets are usually fragmented. The text, structure, audio, and explanations are spread across different sources and are not naturally turned into reusable study material.
+Most language learners study from PDFs, audio, and structured course materials, but these assets are fragmented and not naturally turned into reusable learning data. The challenge is not just parsing text — it is turning raw educational content into a structured, queryable knowledge base that can support AI-driven practice.
 
-This project addresses that gap by extracting meaning from the user’s authorized materials, organizing it into a knowledge base, and generating learning activities directly from the user’s selected scope.
+This project addresses that gap by using LLMs to extract meaning from the user’s authorized materials, organize it into a knowledge base, and generate learning activities based on the exact scope the learner is studying.
 
 ## Copyright and Privacy Boundaries
 
@@ -43,7 +45,7 @@ The app accepts a book PDF and accompanying audio files, maps them to the correc
 
 ### Knowledge extraction
 
-The system identifies meaningful language-learning data, including:
+The AI layer identifies meaningful language-learning data, including:
 
 - vocabulary
 - grammar
@@ -52,6 +54,8 @@ The system identifies meaningful language-learning data, including:
 - topics
 - useful phrases and notes
 - source references such as chapter, page, and book location
+
+This is not a simple text dump. The system is designed to extract structured learning facts and bind them back to their original source material so the model can generate relevant exercises without losing provenance.
 
 ### Structured study model
 
@@ -70,7 +74,7 @@ This allows study to move beyond simple linear reading and toward topic-based le
 
 The app generates exercises from the selected learning scope rather than from random content. It supports multiple exercise types, including multiple choice, fill-in-the-blank, translation, matching, sentence construction, and grammar transformation.
 
-The design supports both:
+This is where the LLM reasoning is most visible: the model is asked to generate context-aware practice items based on a narrow slice of the user's knowledge base, not based on broad unfiltered content. The design supports both:
 
 - persistent exercise generation for study sessions and review routines
 - on-demand generation for small, targeted queries from a selected knowledge subset
@@ -90,19 +94,79 @@ The first version is intentionally focused:
 - extensibility to other languages and books
 - no public accounts, no cloud deployment, no social features
 
-## Architecture Summary
+## 3. Core Architecture
 
-The planned architecture includes:
+```text
+User
+  |
+  v
+Frontend (Angular)
+  |
+  v
+API Layer (Spring Boot)
+  |
+  +--> Upload + organize PDFs / audio
+  +--> Manage study scope
+  +--> Trigger extraction jobs
+  +--> Trigger exercise jobs
+  +--> Review attempts and failures
+  |
+  v
+Storage + Data Layer
+  |
+  +--> PostgreSQL
+  +--> File storage
+  +--> Knowledge base
+  +--> Exercise sets
+  +--> Failed knowledge review
+  |
+  v
+Local AI Layer (Ollama + LLM provider abstraction)
+  |
+  +--> Extract vocabulary, grammar, examples, topics
+  +--> Generate exercises, flashcards, listening tasks
+  +--> Review grammar and mistakes
+```
 
-- Angular frontend for user interaction
-- Java + Spring Boot backend
-- PostgreSQL for persistent data
-- RabbitMQ for async processing jobs
-- local file storage for PDFs and audio
-- local LLM providers through an abstraction layer
-- a knowledge base that stores extracted learning content and source provenance
+```text
+LlmProvider
+  |
+  +-- QwenProvider
+  |
+  +-- LlamaProvider
+  |
+  +-- ClaudeProvider (future)
 
-The system is designed around local models and a small development target, with the expectation that the app should run on a typical developer machine such as a MacBook Air with 16 GB memory.
+Methods:
+- extractKnowledge(request)
+- generateExercises(request)
+- generateGrammarReview(request)
+```
+
+```text
+PDF + Audio + Book Structure
+        |
+        v
+Document Parsing
+        |
+        v
+Transcript Mapping + Source Provenance
+        |
+        v
+Structured Knowledge Base
+        |
+        +--> vocab
+        +--> grammar
+        +--> expressions
+        +--> examples
+        +--> topics
+        |
+        v
+Study Scope Selection
+        |
+        v
+Exercise Generation + Review Loop
+```
 
 ## Technology Direction
 
@@ -123,10 +187,25 @@ This repository currently contains the core planning documents:
 - [REQUIREMENTS.md](REQUIREMENTS.md) — product requirements for V1
 - [SPEC.md](SPEC.md) — technical specification and system design
 
+## Portfolio Framing
+
+This project demonstrates practical LLM system design in a real-world domain:
+
+- document ingestion and structured extraction using AI
+- local-first architecture for private model execution
+- model abstraction and provider routing
+- async processing for generation jobs
+- grounding model outputs in source provenance
+- scoped retrieval of relevant knowledge before generation
+- review loops tied to mistakes and learning outcomes
+- handling of prompt context limits, quality control, and constrained generation
+
+It is a good fit for a portfolio because it shows understanding of the systems side of AI work: not just prompting, but orchestration, retrieval, provenance, workflow design, and production-ready local deployment constraints.
+
 ## Status
 
 V1 planning is complete and the project is being prepared as a public repository with a minimal, focused documentation set.
 
 ## Intended Outcome
 
-The final product is intended to be a private digital tutor that turns books and audio into an organized language study system, with the learner always anchored to the original source material and supported by local AI generation.
+The final product is intended to be a private digital tutor that turns user-owned materials and audio into an organized language study system, with the learner always anchored to the original source material and supported by local AI generation.
