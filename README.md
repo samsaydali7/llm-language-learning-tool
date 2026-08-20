@@ -2,17 +2,25 @@
 
 ## Abstract
 
-This project is a private, local-first language learning application built around a simple principle: turn a textbook and its associated audio into a structured learning system that can generate relevant exercises, review material, and support study by topic, chapter, and source reference.
+This project is a private, local-first language learning application built around a simple principle: turn a user’s own study materials and their associated audio into a structured learning system that can generate relevant exercises, review material, and support study by topic, chapter, and source reference.
 
-The initial target is French learning using French for Dummies 6-in-1, but the system is designed to be language-agnostic and extensible to other books, languages, and learning materials.
+The system is designed to be language-agnostic and extensible to other books, languages, and learning materials, as long as the content is owned or legally authorized for the user’s personal study use.
 
-The goal is not to build a generic chatbot or a public SaaS product. Instead, the project focuses on a personal study workflow that stays local, preserves source provenance, and uses local AI models to transform raw educational content into usable learning knowledge.
+The goal is not to build a generic chatbot or a public SaaS product. Instead, the project focuses on a personal study workflow that runs privately on the user’s machine, preserves source provenance, and uses local AI models to transform authorized educational content into usable learning knowledge.
 
 ## Problem
 
 Most language learners study from books, PDF course materials, and audio resources, but these assets are usually fragmented. The text, structure, audio, and explanations are spread across different sources and are not naturally turned into reusable study material.
 
-This project addresses that gap by extracting meaning from the book, organizing it into a knowledge base, and generating learning activities directly from the user’s selected scope.
+This project addresses that gap by extracting meaning from the user’s authorized materials, organizing it into a knowledge base, and generating learning activities directly from the user’s selected scope.
+
+## Copyright and Privacy Boundaries
+
+This application is intended for private, personal use with materials the user owns or is otherwise legally permitted to use.
+
+The system must not be designed to store or redistribute copyrighted content without authorization. It should process only materials the user has the right to import and study, and it must keep those materials local to the user’s environment.
+
+The app should help the user learn from their own content, not act as a repository or distribution system for third-party copyrighted books or media. The codebase itself is not intended to store or distribute copyrighted material; it is meant to run privately for the user’s own study workflow.
 
 ## Vision
 
@@ -78,7 +86,7 @@ The first version is intentionally focused:
 - single-user local-first workflow
 - private local storage
 - local LLM execution through Ollama
-- initial support for French learning materials
+- support for user-owned study materials only
 - extensibility to other languages and books
 - no public accounts, no cloud deployment, no social features
 

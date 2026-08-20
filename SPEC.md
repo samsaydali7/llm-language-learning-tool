@@ -12,15 +12,11 @@ Final
 
 A private, local-first, language-agnostic language learning application that converts textbooks and associated audio into a structured knowledge base and uses that knowledge base to generate personalized learning activities.
 
-The first corpus is:
+The architecture must not contain language-specific business logic and must support additional languages and books in the future.
 
-French for Dummies 6-in-1
+The app is intended to run privately on the user’s own machine and to support materials the user owns or is otherwise authorized to use.
 
-The first target language is:
-
-French
-
-The architecture must not contain French-specific business logic and must support additional languages and books in the future.
+The system must not be used to store or redistribute copyrighted material without permission. The application is designed for personal study workflows, not as a content archive or distribution platform.
 
 ## 1. Goals
 

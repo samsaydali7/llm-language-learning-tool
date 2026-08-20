@@ -10,9 +10,9 @@ Final
 
 ## Purpose
 
-The application will be a private language-learning app that turns books and their accompanying audio into organized learning material.
+The application will be a private language-learning app that turns user-owned books and their accompanying audio into organized learning material.
 
-The first use case will be learning French from the French for Dummies 6-in-1 book, but the application should be designed so that other languages and books can be added later.
+The application should be designed so that other languages and books can be added later, provided the user owns or is otherwise authorized to use the material.
 
 The application should help the user:
 
@@ -49,7 +49,9 @@ Explanation language: English
 
 ## Books and Learning Materials
 
-The user should be able to add a book as a learning source.
+The user should be able to add a book or other learning source only when they own it or are otherwise authorized to use it for personal study.
+
+The system must not be used to store copyrighted material without permission.
 
 A book can contain:
 
