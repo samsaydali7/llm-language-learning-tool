@@ -12,7 +12,7 @@ It provides a ChatGPT-style workspace where you can:
 - compare model behavior
 - manage local model conversations
 
-In this project, Open WebUI is a development and operator interface for testing Ollama models. It is not the product UI described by the Angular frontend architecture.
+In this project, Open WebUI is a development and operator interface for testing Ollama models. It is not the product UI described by the Angular frontend architecture, and it is **not** part of `docker-compose.yml` - it's optional, run standalone only when you actually want it (see "Starting Open WebUI" below). Keeping it out of the default stack matters on memory-constrained hardware: it's one more process competing with Ollama for RAM, and on a 16GB machine that's a measurable hit to real extraction throughput.
 
 ## How It Fits the System
 
@@ -20,7 +20,7 @@ In this project, Open WebUI is a development and operator interface for testing 
 Browser
    |
    v
-Open WebUI :3000
+Open WebUI :3000 (standalone container, started on demand)
    |
   |  http://host.docker.internal:11434
    v
@@ -30,22 +30,10 @@ Native Ollama :11434
    +--> Llama exercise model
 ```
 
-Open WebUI and the future application backend use the same native Ollama runtime, but they have different purposes:
+Open WebUI and the application backend use the same native Ollama runtime, but they have different purposes:
 
-Open WebUI
-  Manual model testing
-docker compose stop open-webui
-docker compose rm -f open-webui
-docker volume rm llm-language-learning-tool_open_webui_data
-docker compose up -d open-webui
-
-Angular + Spring Boot application
-  Book and audio workflows
-  Knowledge extraction jobs
-  Source provenance
-  Exercise generation
-  Review and failure tracking
-```
+- **Open WebUI**: manual model testing, run standalone, started/stopped independently of the app
+- **Angular + Spring Boot application** (`docker compose up`): book and audio workflows, knowledge extraction jobs, source provenance, exercise generation, review and failure tracking
 
 ## Starting Open WebUI
 
@@ -55,32 +43,35 @@ Start Ollama natively first:
 ollama serve
 ```
 
-Then start Open WebUI in Docker:
+Then start Open WebUI as a standalone container:
 
 ```bash
-cp .env.example .env
-docker compose up -d open-webui
+docker run -d --name open-webui \
+  -p 3000:8080 \
+  -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
+  --add-host=host.docker.internal:host-gateway \
+  -v open_webui_data:/app/backend/data \
+  ghcr.io/open-webui/open-webui:main
 ```
 
 Open the UI at:
 
 [http://localhost:3000](http://localhost:3000)
 
-The first visit may ask you to create a local account. The account data is stored in the Docker-managed `open_webui_data` volume.
+The first visit may ask you to create a local account. The account data is stored in the `open_webui_data` Docker volume (named the same as the one the old Compose-managed setup used, so existing data carries over if you have any).
+
+When you're done, stop and remove the container - the volume (and its saved settings/history) stays behind for next time:
+
+```bash
+docker stop open-webui
+docker rm open-webui
+```
 
 ## Connection Configuration
 
-The Compose service connects to native Ollama on the developer host:
+The container connects to native Ollama on the developer host via the `OLLAMA_BASE_URL` environment variable and the `host.docker.internal` host-gateway mapping shown in the `docker run` command above. The browser does not connect directly to this internal address; it connects to Open WebUI through port `3000`.
 
-```yaml
-environment:
-  OLLAMA_BASE_URL: http://host.docker.internal:11434
-  OLLAMA_BASE_URLS: http://host.docker.internal:11434
-```
-
-`host.docker.internal` resolves back to the host. The Compose configuration provides the host-gateway mapping needed for Linux and supports the same address on Docker Desktop for macOS and Windows. The browser does not connect directly to this internal address; it connects to Open WebUI through port `3000`.
-
-From the host machine, Ollama’s API is available at:
+From the host machine, Ollama's API is available at:
 
 ```text
 http://localhost:11434
@@ -104,7 +95,7 @@ EXTRACTION_MODEL=qwen3:8b
 EXERCISE_MODEL=llama3.2:3b
 ```
 
-Changing these variables affects the model bootstrap configuration. The application’s future provider routing will use equivalent runtime configuration rather than hard-coded model names.
+Changing these variables affects the application's model routing (SPEC.md #8); they don't affect Open WebUI directly, since it's a standalone testing tool - select whichever model you want from its own model picker.
 
 ## Useful Testing Prompts
 
@@ -120,11 +111,11 @@ Given the selected educational passage, return structured JSON with vocabulary, 
 Using only the selected knowledge items, generate five exercises. Include the exercise type, question, correct answer, explanation, and source reference. Do not use knowledge outside the provided context.
 ```
 
-These prompts are for experimentation only. The production application will need structured request and response contracts, validation, provenance checks, and retry handling.
+These prompts are for experimentation only. The production application uses structured request/response contracts, validation, provenance checks, and retry handling - see `backend/src/main/java/com/languagelearning/llm/`.
 
 ## Why It Is Useful for This Project
 
-Open WebUI helps validate model capabilities before implementing the backend pipeline. It can be used to compare:
+Open WebUI helps validate model capabilities before implementing (or while debugging) the backend pipeline. It can be used to compare:
 
 - extraction quality across models
 - structured output reliability
@@ -133,7 +124,7 @@ Open WebUI helps validate model capabilities before implementing the backend pip
 - token usage and context limits
 - whether a local model is sufficient for a workload
 
-This supports the project’s model-specialization strategy:
+This supports the project's model-specialization strategy:
 
 ```text
 Extraction quality requirement
@@ -167,24 +158,14 @@ The `open_webui_data` volume is local runtime data and is not part of the Git re
 
 ### Open WebUI cannot connect to Ollama
 
-Check that both services are running:
+Check that the container is running and inspect its logs:
 
 ```bash
-docker compose ps ollama open-webui
+docker ps --filter name=open-webui
+docker logs open-webui
 ```
 
-Inspect logs:
-
-```bash
-docker compose logs ollama open-webui
-```
-
-The Open WebUI container must use:
-
-```text
-http://host.docker.internal:11434
-
-If the logs still show `http://ollama:11434`, Open WebUI is using a connection saved in its local database from the previous Docker Ollama setup. In Open WebUI, open the admin connection settings and change the Ollama URL to:
+The container must be using `http://host.docker.internal:11434` as its Ollama URL (set via `OLLAMA_BASE_URL` in the `docker run` command). If Open WebUI's admin connection settings show something else - e.g. a stale `http://ollama:11434` saved from an earlier setup - open its admin connection settings in the UI and change the Ollama URL to:
 
 ```text
 http://host.docker.internal:11434
@@ -192,18 +173,7 @@ http://host.docker.internal:11434
 
 Save the setting and refresh the model list.
 
-If this is a new installation and you do not need to preserve Open WebUI account or conversation data, reset its local volume:
-
-```bash
-docker compose down
-docker volume rm llm-language-learning-tool_open_webui_data
-docker compose up -d open-webui
-```
-
-Then create the local Open WebUI account again. This reset is optional and deletes only Open WebUI data, not Ollama models.
-```
-
-Do not use `localhost:11434` inside the Open WebUI container. In a container, `localhost` refers to the Open WebUI container itself.
+Do not use `localhost:11434` inside the Open WebUI container - in a container, `localhost` refers to the container itself, not the host.
 
 ### Models do not appear
 
@@ -216,18 +186,14 @@ ollama pull llama3.2:3b
 
 ### Reset Open WebUI data
 
-This removes the local Open WebUI account and conversation data:
+This removes the local Open WebUI account and conversation data. Only do this if you intentionally want a clean slate - it does not touch Ollama models or anything from the main application:
 
 ```bash
-docker compose down
-
-docker volume rm llm-language-learning-tool_open_webui_data
-
-ollama serve
-docker compose up -d open-webui
+docker stop open-webui
+docker rm open-webui
+docker volume rm open_webui_data
+# then start it again as in "Starting Open WebUI" above
 ```
-
-Use this only when you intentionally want to reset the local UI data.
 
 ## Related Documentation
 

@@ -30,19 +30,6 @@ services:
       timeout: 5s
       retries: 10
 
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    restart: unless-stopped
-    environment:
-      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-      OLLAMA_BASE_URLS: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    ports:
-      - "3000:8080"
-    volumes:
-      - open_webui_data:/app/backend/data
-
   backend:
     build:
       context: ./backend
@@ -90,5 +77,4 @@ services:
 volumes:
   postgres_data:
   rabbitmq_data:
-  open_webui_data:
   backend_storage:

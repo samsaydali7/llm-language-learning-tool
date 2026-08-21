@@ -4,7 +4,7 @@
 
 Ollama is a local runtime for running language models on your own computer. It provides a command-line interface and a local HTTP API that applications can use to send prompts to installed models.
 
-This project runs Ollama natively on the developer host. Docker is used only for PostgreSQL, RabbitMQ, and Open WebUI. Native execution can use hardware acceleration when supported by the host.
+This project runs Ollama natively on the developer host. Docker Compose runs PostgreSQL, RabbitMQ, and the application itself; Open WebUI is optional and run standalone (not part of Compose) only when you want to test a model manually - see the [Open WebUI guide](open-webui.md). Native Ollama execution can use hardware acceleration when supported by the host.
 
 ## Runtime Architecture
 
@@ -17,10 +17,12 @@ Developer host
   |      +--> llama3.2:3b    exercises
   |
   +--> Docker Compose
-         |
-         +--> PostgreSQL
-         +--> RabbitMQ
-         +--> Open WebUI :3000
+  |      |
+  |      +--> PostgreSQL
+  |      +--> RabbitMQ
+  |      +--> backend + frontend
+  |
+  +--> Open WebUI :3000 (standalone, optional, started on demand)
                          |
                          +--> host.docker.internal:11434
 ```
@@ -85,7 +87,7 @@ With Ollama running natively, start the Docker services:
 
 ```bash
 cp .env.example .env
-docker compose up -d postgres rabbitmq open-webui
+docker compose up -d postgres rabbitmq
 ```
 
 The Compose services are:
@@ -93,20 +95,17 @@ The Compose services are:
 ```text
 postgres       structured data
 rabbitmq       asynchronous processing jobs
-open-webui     browser UI for testing Ollama
+backend        Spring Boot API (see "Running the Full Application" in the README)
+frontend       Angular application
 ```
 
-Open WebUI is available at:
-
-[http://localhost:3000](http://localhost:3000)
-
-Inside Docker, Open WebUI reaches native Ollama through:
+The backend reaches native Ollama through:
 
 ```text
 http://host.docker.internal:11434
 ```
 
-This value is configured in `.env.example` as `OLLAMA_BASE_URL`.
+This value is configured in `.env.example` as `OLLAMA_BASE_URL`. Open WebUI, if you want it for manual model testing, is run standalone rather than through Compose - see the [Open WebUI guide](open-webui.md).
 
 ## Test a Model
 
@@ -228,10 +227,10 @@ Check the host API:
 curl http://localhost:11434/api/tags
 ```
 
-Check the configured endpoint:
+Check the endpoint the standalone container was started with:
 
 ```bash
-docker compose config | grep OLLAMA_BASE_URL
+docker inspect open-webui --format '{{range .Config.Env}}{{println .}}{{end}}' | grep OLLAMA_BASE_URL
 ```
 
 The expected value is:
@@ -244,7 +243,15 @@ Do not use `localhost:11434` as the endpoint inside Open WebUI. In a container, 
 
 ### Models are too slow
 
-Use the smaller exercise model and unload the other model:
+On a memory-constrained machine (SPEC.md #5's target is a 16GB MacBook Air with no discrete GPU), the most likely cause isn't the model - it's the host swapping to disk. Check first:
+
+```bash
+sysctl vm.swapusage
+```
+
+Several GB "used" means the system is under real memory pressure, and disk swap is dramatically slower than RAM - this alone can turn a normally-fine model into something that looks hung. If Open WebUI is running, stop it (it's one more idle process competing for the same RAM); closing other memory-heavy apps helps too. This was measured directly during development: stopping an idle Open WebUI instance roughly doubled real extraction throughput on a 16GB machine.
+
+If it's still slow after that, use the smaller exercise model and unload the other model:
 
 ```bash
 ollama stop qwen3:8b

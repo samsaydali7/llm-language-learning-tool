@@ -177,14 +177,13 @@ Core design principles:
 
 ## Local AI Stack
 
-The repository uses Ollama natively on the developer host for local model execution. Docker runs the supporting services and Open WebUI:
+The repository uses Ollama natively on the developer host for local model execution. Docker runs the supporting services:
 
 ```text
 Docker Compose
   |
   +--> PostgreSQL       structured knowledge and review data
   +--> RabbitMQ         asynchronous extraction and exercise jobs
-  +--> Open WebUI       browser UI for testing local models
          |
          v
   Native Ollama :11434
@@ -192,6 +191,8 @@ Docker Compose
          +--> Qwen extraction model
          +--> Llama exercise model
 ```
+
+Open WebUI (a browser UI for manually testing Ollama models) is optional and not part of the Compose stack - see "Optional: Open WebUI for manual model testing" below if you want it. On memory-constrained hardware it's worth leaving off entirely: an idle instance is one more thing competing with Ollama for RAM, and on a 16GB machine that's measurably felt (real-world extraction throughput roughly doubled after stopping it during a live run).
 
 ## Full Local Setup
 
@@ -222,10 +223,8 @@ ollama pull llama3.2:3b
 
 ```bash
 cp .env.example .env
-docker compose up -d postgres rabbitmq open-webui
+docker compose up -d postgres rabbitmq
 ```
-
-Open the model UI at [http://localhost:3000](http://localhost:3000). Open WebUI is a development and operator interface for testing Ollama models; it is separate from the Angular application described below.
 
 The default model routing is configurable through `.env` (see `.env.example` for the full list):
 
@@ -242,9 +241,22 @@ The extraction and exercise workloads are deliberately separated. A stronger or 
 
 Claude, if added later, would be integrated as a separate Anthropic provider. It cannot be accessed through Ollama because it is a hosted model. This would allow Claude to handle quality-sensitive extraction while local Ollama models handle frequent exercise generation. The default V1 workflow remains local and does not require an external API key.
 
-The Compose configuration maps `host.docker.internal` to the host gateway so Open WebUI (and the backend) can reach native Ollama on macOS, Linux, or Windows.
+The Compose configuration maps `host.docker.internal` to the host gateway so the backend can reach native Ollama on macOS, Linux, or Windows.
 
-For browser-based model testing, see the [Open WebUI guide](docs/open-webui.md).
+### Optional: Open WebUI for manual model testing
+
+Open WebUI is a browser UI for poking at Ollama models directly - useful while developing, not needed to run the app. It's intentionally not part of `docker-compose.yml` so it never runs (and consumes RAM) unless you actually want it. Start it standalone whenever you need it:
+
+```bash
+docker run -d --name open-webui \
+  -p 3000:8080 \
+  -e OLLAMA_BASE_URL=http://host.docker.internal:11434 \
+  --add-host=host.docker.internal:host-gateway \
+  -v open_webui_data:/app/backend/data \
+  ghcr.io/open-webui/open-webui:main
+```
+
+Then open [http://localhost:3000](http://localhost:3000). Stop it with `docker stop open-webui && docker rm open-webui` when done (`-v open_webui_data:...` keeps its settings/history for next time even after the container is removed). See the [Open WebUI guide](docs/open-webui.md) for more.
 
 ## Running the Full Application
 
@@ -255,7 +267,7 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-This starts Postgres, RabbitMQ, Open WebUI, the backend API, and the frontend together. Open the app at [http://localhost:8081](http://localhost:8081). The backend API is also reachable directly at [http://localhost:8080/api](http://localhost:8080/api) if useful for debugging.
+This starts Postgres, RabbitMQ, the backend API, and the frontend together. Open the app at [http://localhost:8081](http://localhost:8081). The backend API is also reachable directly at [http://localhost:8080/api](http://localhost:8080/api) if useful for debugging.
 
 `--build` only needs to run the first time, or after you change backend/frontend code - for every other start (including after a reboot, if the containers didn't already come back up on their own) plain `docker compose up -d` is enough and is faster since it skips rebuilding images:
 
@@ -301,7 +313,7 @@ The frontend dev server proxies `/api` to `http://localhost:8080` (see `frontend
 
 ### Data Persistence
 
-Postgres, RabbitMQ, Open WebUI, and the backend's uploaded PDFs/audio each write to a named Docker volume (`postgres_data`, `rabbitmq_data`, `open_webui_data`, `backend_storage` in `docker-compose.yml`). Named volumes live on disk independently of any container, so your data survives:
+Postgres, RabbitMQ, and the backend's uploaded PDFs/audio each write to a named Docker volume (`postgres_data`, `rabbitmq_data`, `backend_storage` in `docker-compose.yml`). Named volumes live on disk independently of any container, so your data survives:
 
 - `docker compose stop` / `docker compose restart`
 - `docker compose down` (stops and removes the *containers*, not the volumes)

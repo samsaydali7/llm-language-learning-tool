@@ -41,7 +41,11 @@ public class OllamaClient {
 
     /** Sends a single-shot prompt and returns the raw text response (expected to contain JSON). */
     public String generate(String model, String prompt) {
-        GenerateRequest request = new GenerateRequest(model, prompt, false, "json", new Options(0.2, 4096));
+        // Qwen3 models "think" by default - generating a long hidden reasoning chain before the
+        // actual answer - which is expensive on constrained local hardware and not needed for a
+        // structured-extraction task like this one. "think" is a no-op for models that don't
+        // support it (e.g. Llama), so it's safe to always send.
+        GenerateRequest request = new GenerateRequest(model, prompt, false, "json", false, new Options(0.2, 4096));
         long startedAt = System.currentTimeMillis();
         log.info("Ollama call starting: model={} promptChars={}", model, prompt.length());
         GenerateResponse response;
@@ -80,7 +84,7 @@ public class OllamaClient {
     private record Options(double temperature, @JsonProperty("num_predict") int numPredict) {
     }
 
-    private record GenerateRequest(String model, String prompt, boolean stream, String format, Options options) {
+    private record GenerateRequest(String model, String prompt, boolean stream, String format, boolean think, Options options) {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
