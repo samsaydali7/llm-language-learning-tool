@@ -32,6 +32,12 @@ spring:
     listener:
       simple:
         default-requeue-rejected: false
+        # Measured directly: two concurrent qwen3:8b calls on this hardware (shared unified
+        # memory, no discrete GPU) don't run in true parallel - they roughly double each other's
+        # latency, which pushed both past the 300s timeout when tried at concurrency 2. A single
+        # call reliably finishes in ~130s, so serialized processing is actually faster and more
+        # reliable here than "parallel" that isn't really parallel on this hardware.
+        concurrency: 1
         retry:
           enabled: true
           max-attempts: 3
@@ -58,11 +64,10 @@ extraction:
 llm:
   ollama:
     base-url: ${OLLAMA_BASE_URL:http://host.docker.internal:11434}
-    # Real 8B-class quantized models on modest hardware (SPEC.md #5's target: a MacBook Air M4,
-    # no discrete GPU) can genuinely take 2+ minutes per extraction call once given a real chunk
-    # of text - measured directly against a live Ollama instance while diagnosing slow/stalled
-    # extraction. 120s was cutting off calls moments before they would have succeeded.
-    request-timeout-seconds: ${OLLAMA_TIMEOUT_SECONDS:300}
+    # No request-timeout-seconds here: OllamaClient uses an indefinite read timeout by design -
+    # see its Javadoc. Real 8B-class models on modest hardware (SPEC.md #5's target: a MacBook
+    # Air M4, no discrete GPU) take anywhere from ~130s to 300s+ per call depending on chunk size
+    # and machine load, so any fixed timeout risks killing a still-working generation.
   extraction:
     provider: ${EXTRACTION_PROVIDER:qwen}
     model: ${EXTRACTION_MODEL:qwen3:8b}

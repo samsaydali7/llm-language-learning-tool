@@ -17,6 +17,7 @@ import com.languagelearning.job.messaging.RabbitConfig;
 import com.languagelearning.job.messaging.StructureExtractionMessage;
 import com.languagelearning.job.service.ExtractionJobService;
 import com.languagelearning.storage.StorageService;
+import com.languagelearning.structure.KnowledgeCoverageRange;
 import com.languagelearning.structure.entity.StructureNode;
 import com.languagelearning.structure.repository.StructureNodeRepository;
 import com.languagelearning.structure.service.StructureNodeService;
@@ -69,14 +70,12 @@ public class StructureExtractionListener {
                 scanForAudioReferences(book, document, persisted);
                 log.info("Structure extraction complete for book {}: {} node(s)", book.getId(), persisted.size());
 
-                List<StructureNode> leaves = structureNodeService.getLeaves(book.getId());
-                for (StructureNode leaf : leaves) {
-                    knowledgeMessages.add(new KnowledgeExtractionMessage(jobId, book.getId(), leaf.getId()));
+                for (KnowledgeCoverageRange range
+                        : structureNodeService.planKnowledgeExtractionRanges(book.getId(), document.getNumberOfPages())) {
+                    knowledgeMessages.add(new KnowledgeExtractionMessage(
+                            jobId, book.getId(), range.structureNodeId(), range.startPage(), range.endPage()));
                 }
-                // Leaf sections alone can leave gaps - e.g. a chapter's own intro text before its
-                // first subsection begins - so also cover any page range no leaf claims.
-                knowledgeMessages.addAll(
-                        computeGapMessages(jobId, book.getId(), persisted, leaves, document.getNumberOfPages()));
+                log.info("Planned {} knowledge-extraction message(s) for book {}", knowledgeMessages.size(), book.getId());
             }
             audioIngestionService.rematchUnlinkedReferences(book.getId());
 
@@ -88,48 +87,6 @@ public class StructureExtractionListener {
             log.error("Structure extraction failed for job {}", jobId, e);
             extractionJobService.markFailed(jobId, e.getMessage());
         }
-    }
-
-    /**
-     * Finds page ranges that no leaf section covers - typically a chapter or section's own intro
-     * text before its first child begins - and returns one extra extraction message per gap,
-     * anchored to the most specific node (leaf or not) whose own range contains it, so that
-     * content isn't silently skipped just because it sits above the leaf level.
-     */
-    private List<KnowledgeExtractionMessage> computeGapMessages(
-            Long jobId, Long bookId, List<StructureNode> allNodes, List<StructureNode> leaves, int totalPages) {
-        boolean[] covered = new boolean[totalPages + 1];
-        for (StructureNode leaf : leaves) {
-            if (leaf.getStartPage() == null) {
-                continue;
-            }
-            int end = leaf.getEndPage() != null ? leaf.getEndPage() : leaf.getStartPage();
-            for (int page = leaf.getStartPage(); page <= Math.min(end, totalPages); page++) {
-                covered[page] = true;
-            }
-        }
-
-        List<KnowledgeExtractionMessage> messages = new ArrayList<>();
-        int page = 1;
-        while (page <= totalPages) {
-            if (covered[page]) {
-                page++;
-                continue;
-            }
-            int gapStart = page;
-            while (page <= totalPages && !covered[page]) {
-                page++;
-            }
-            int gapEnd = page - 1;
-            StructureNode anchor = findNodeForPage(allNodes, gapStart);
-            if (anchor != null) {
-                messages.add(new KnowledgeExtractionMessage(jobId, bookId, anchor.getId(), gapStart, gapEnd));
-            }
-        }
-        if (!messages.isEmpty()) {
-            log.info("Found {} page-gap range(s) not covered by any leaf section for book {}", messages.size(), bookId);
-        }
-        return messages;
     }
 
     private List<StructureNode> persistTree(Book book, List<ExtractedNode> nodes, StructureNode parent, int startIndex) {

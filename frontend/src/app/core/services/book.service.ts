@@ -42,4 +42,9 @@ export class BookService {
   extractionJobs(id: number): Observable<ExtractionJob[]> {
     return this.http.get<ExtractionJob[]>(`${this.base}/${id}/extraction-jobs`);
   }
+
+  /** Re-plans and re-publishes knowledge extraction against already-detected structure, without re-uploading the PDF. */
+  retryExtraction(id: number): Observable<ExtractionJob> {
+    return this.http.post<ExtractionJob>(`${this.base}/${id}/retry-extraction`, {});
+  }
 }

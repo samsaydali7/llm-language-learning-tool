@@ -49,6 +49,12 @@
           @if (latestJob.errorMessage) {
             <span class="muted">{{ latestJob.errorMessage }}</span>
           }
+          @if (book.hasPdf) {
+            <button mat-stroked-button (click)="retryExtraction()" [disabled]="retrying"
+                    matTooltip="Re-runs knowledge extraction against the already-detected structure, without re-uploading the PDF. Use this if a job looks stuck.">
+              <mat-icon>refresh</mat-icon> Retry extraction
+            </button>
+          }
         </div>
       }
     </div>

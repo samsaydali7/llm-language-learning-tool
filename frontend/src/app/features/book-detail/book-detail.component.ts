@@ -7,6 +7,7 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { FormsModule } from '@angular/forms';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
@@ -35,6 +36,7 @@ import { StructureBrowserNodeComponent } from './structure-browser-node.componen
     MatTabsModule,
     MatSelectModule,
     MatFormFieldModule,
+    MatTooltipModule,
     StructureBrowserNodeComponent,
   ],
   templateUrl: './book-detail.component.html',
@@ -57,6 +59,7 @@ export class BookDetailComponent implements OnInit, OnDestroy {
 
   uploadingPdf = false;
   uploadingAudio = false;
+  retrying = false;
 
   constructor(
     private readonly route: ActivatedRoute,
@@ -158,6 +161,21 @@ export class BookDetailComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.uploadingAudio = false;
         this.snackBar.open(err.error?.message ?? 'Could not upload audio', 'Dismiss', { duration: 4000 });
+      },
+    });
+  }
+
+  retryExtraction(): void {
+    this.retrying = true;
+    this.bookService.retryExtraction(this.bookId).subscribe({
+      next: (job) => {
+        this.retrying = false;
+        this.latestJob = job;
+        this.maybePoll();
+      },
+      error: (err) => {
+        this.retrying = false;
+        this.snackBar.open(err.error?.message ?? 'Could not retry extraction', 'Dismiss', { duration: 4000 });
       },
     });
   }

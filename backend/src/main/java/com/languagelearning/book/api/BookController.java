@@ -65,4 +65,14 @@ public class BookController {
     public List<ExtractionJobResponse> extractionJobs(@PathVariable Long id) {
         return extractionJobService.findByBook(id).stream().map(ExtractionJobResponse::from).toList();
     }
+
+    /**
+     * Re-plans and re-publishes knowledge extraction against the book's already-detected
+     * structure, without re-uploading the PDF - for recovering a job that appears stuck (e.g. its
+     * queued messages were lost to an infrastructure restart).
+     */
+    @PostMapping("/{id}/retry-extraction")
+    public ExtractionJobResponse retryExtraction(@PathVariable Long id) {
+        return ExtractionJobResponse.from(extractionJobService.retryKnowledgeExtraction(bookService.getById(id)));
+    }
 }

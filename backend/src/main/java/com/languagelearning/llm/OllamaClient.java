@@ -25,9 +25,14 @@ public class OllamaClient {
 
     public OllamaClient(OllamaProperties properties) {
         SimpleClientHttpRequestFactory requestFactory = new SimpleClientHttpRequestFactory();
-        Duration timeout = Duration.ofSeconds(properties.requestTimeoutSeconds());
-        requestFactory.setConnectTimeout(timeout);
-        requestFactory.setReadTimeout(timeout);
+        // Connecting to Ollama should fail fast if it's genuinely unreachable, but how long a
+        // single generation takes is unbounded on constrained local hardware (measured: a single
+        // qwen3:8b call anywhere from ~130s to 300s+ depending on chunk size and what else is
+        // competing for the machine) - so the read timeout is deliberately indefinite (0 means
+        // "no timeout" per HttpURLConnection) rather than a guess that ends up killing valid,
+        // still-working generations.
+        requestFactory.setConnectTimeout(Duration.ofSeconds(10));
+        requestFactory.setReadTimeout(Duration.ZERO);
         this.restClient = RestClient.builder()
                 .baseUrl(properties.baseUrl())
                 .requestFactory(requestFactory)
@@ -37,16 +42,34 @@ public class OllamaClient {
     /** Sends a single-shot prompt and returns the raw text response (expected to contain JSON). */
     public String generate(String model, String prompt) {
         GenerateRequest request = new GenerateRequest(model, prompt, false, "json", new Options(0.2, 4096));
-        log.debug("Calling Ollama model={} promptChars={}", model, prompt.length());
-        GenerateResponse response = restClient.post()
-                .uri("/api/generate")
-                .body(request)
-                .retrieve()
-                .body(GenerateResponse.class);
+        long startedAt = System.currentTimeMillis();
+        log.info("Ollama call starting: model={} promptChars={}", model, prompt.length());
+        GenerateResponse response;
+        try {
+            response = restClient.post()
+                    .uri("/api/generate")
+                    .body(request)
+                    .retrieve()
+                    .body(GenerateResponse.class);
+        } catch (RuntimeException e) {
+            log.warn("Ollama call failed after {}s: model={} error={}",
+                    elapsedSeconds(startedAt), model, e.toString());
+            throw e;
+        }
         if (response == null || response.response() == null) {
+            log.warn("Ollama call returned no body after {}s: model={}", elapsedSeconds(startedAt), model);
             throw new LlmResponseParseException("Ollama returned no response body for model " + model);
         }
+        double elapsed = elapsedSeconds(startedAt);
+        Long evalCount = response.evalCount();
+        String rate = evalCount != null && elapsed > 0 ? String.format(" (%.1f tok/s)", evalCount / elapsed) : "";
+        log.info("Ollama call finished in {}s: model={} responseChars={} evalCount={}{}",
+                elapsed, model, response.response().length(), evalCount, rate);
         return response.response();
+    }
+
+    private double elapsedSeconds(long startedAtMillis) {
+        return Math.round((System.currentTimeMillis() - startedAtMillis) / 100.0) / 10.0;
     }
 
     public <T> T generateStructured(String model, String prompt, Class<T> type) {
@@ -61,6 +84,6 @@ public class OllamaClient {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private record GenerateResponse(String response, Boolean done) {
+    private record GenerateResponse(String response, Boolean done, @JsonProperty("eval_count") Long evalCount) {
     }
 }
