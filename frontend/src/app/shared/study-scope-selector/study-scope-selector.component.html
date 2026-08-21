@@ -1,0 +1,61 @@
+<div class="scope">
+  <div class="field-grid">
+    <mat-form-field appearance="outline">
+      <mat-label>Language</mat-label>
+      <mat-select [(ngModel)]="languageId" (selectionChange)="onLanguageChange()">
+        @for (language of languages; track language.id) {
+          <mat-option [value]="language.id">{{ language.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Book</mat-label>
+      <mat-select [(ngModel)]="bookId" (selectionChange)="onBookChange()" [disabled]="!languageId">
+        <mat-option [value]="null">All books</mat-option>
+        @for (book of books; track book.id) {
+          <mat-option [value]="book.id">{{ book.title }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="outline">
+      <mat-label>Topics</mat-label>
+      <mat-select [(ngModel)]="topicIds" (selectionChange)="emit()" multiple [disabled]="!languageId">
+        @for (topic of topics; track topic.id) {
+          <mat-option [value]="topic.id">{{ topic.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <div class="scope__types">
+    <span class="scope__label">Knowledge types</span>
+    @for (option of knowledgeTypeOptions; track option.value) {
+      <mat-checkbox
+        [checked]="knowledgeTypes.includes(option.value)"
+        (change)="toggleKnowledgeType(option.value, $event.checked)">
+        {{ option.label }}
+      </mat-checkbox>
+    }
+    <span class="muted scope__hint">Leave all unchecked to include every type.</span>
+  </div>
+
+  @if (bookId && structureRoots.length) {
+    <mat-expansion-panel class="scope__structure">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon>account_tree</mat-icon>&nbsp;Narrow by chapter / section
+          @if (selectedNodeIds.size) {
+            <span class="tag">{{ selectedNodeIds.size }} selected</span>
+          }
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+      <div class="scope__tree">
+        @for (root of structureRoots; track root.id) {
+          <app-structure-tree-node [node]="root" [selectedIds]="selectedNodeIds" (toggle)="toggleNode($event)" />
+        }
+      </div>
+    </mat-expansion-panel>
+  }
+</div>

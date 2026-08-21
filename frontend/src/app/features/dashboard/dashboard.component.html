@@ -1,0 +1,35 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Your private study engine</h1>
+      <p>Turn your own books and audio into a structured knowledge base, then practice from exactly the material you choose.</p>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="card stats__card">
+      <mat-icon>translate</mat-icon>
+      <div>
+        <div class="stats__value">{{ languageCount }}</div>
+        <div class="muted">Language{{ languageCount === 1 ? '' : 's' }}</div>
+      </div>
+    </div>
+    <div class="card stats__card">
+      <mat-icon>menu_book</mat-icon>
+      <div>
+        <div class="stats__value">{{ bookCount }}</div>
+        <div class="muted">Book{{ bookCount === 1 ? '' : 's' }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="quick-links">
+    @for (link of quickLinks; track link.path) {
+      <a class="card quick-link" [routerLink]="link.path">
+        <mat-icon>{{ link.icon }}</mat-icon>
+        <h3>{{ link.title }}</h3>
+        <p class="muted">{{ link.description }}</p>
+      </a>
+    }
+  </div>
+</div>

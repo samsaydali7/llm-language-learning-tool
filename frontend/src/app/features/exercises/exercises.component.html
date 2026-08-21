@@ -1,0 +1,72 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Exercises</h1>
+      <p>Pick a scope, then either generate a quick set immediately or queue a persistent job you can revisit later.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>1. What to study</h3>
+    <app-study-scope-selector (scopeChange)="onScopeChange($event)" />
+  </div>
+
+  <div class="card">
+    <h3>2. Exercise settings</h3>
+    <div class="settings">
+      <mat-form-field appearance="outline" class="count-field">
+        <mat-label>How many</mat-label>
+        <input matInput type="number" min="1" max="50" [(ngModel)]="count" />
+      </mat-form-field>
+      <div class="type-checks">
+        @for (type of exerciseTypes; track type) {
+          <mat-checkbox [checked]="selectedTypes.includes(type)" (change)="toggleType(type, $event.checked)">
+            {{ type | lowercase }}
+          </mat-checkbox>
+        }
+      </div>
+      <span class="muted">Leave all unchecked to let the model pick appropriate types.</span>
+    </div>
+  </div>
+
+  <mat-tab-group class="card" mat-stretch-tabs="false">
+    <mat-tab label="Quick generate">
+      <div class="tab-body">
+        <p class="muted">Generates immediately from a narrow selection - great for exploring while browsing (SPEC.md - on-demand generation).</p>
+        <button mat-flat-button color="primary" (click)="generateOnDemand()" [disabled]="generating">
+          <mat-icon>bolt</mat-icon> Generate now
+        </button>
+        @if (generating && !onDemandExercises) {
+          <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+        }
+        @if (onDemandExercises) {
+          <div class="session-wrapper">
+            <app-exercise-session [exercises]="onDemandExercises" />
+          </div>
+        }
+      </div>
+    </mat-tab>
+    <mat-tab label="Queued job">
+      <div class="tab-body">
+        <p class="muted">Runs in the background and is saved for structured review sessions later.</p>
+        <button mat-flat-button color="primary" (click)="createJob()" [disabled]="generating">
+          <mat-icon>queue</mat-icon> Queue job
+        </button>
+        @if (job) {
+          <div class="job-status">
+            <span class="status-pill" [class]="job.status.toLowerCase()">{{ job.status }}</span>
+            @if (job.status === 'RUNNING' || job.status === 'PENDING') {
+              <mat-progress-bar mode="indeterminate" style="width: 160px"></mat-progress-bar>
+            }
+            @if (job.errorMessage) { <span class="muted">{{ job.errorMessage }}</span> }
+          </div>
+        }
+        @if (jobExercises) {
+          <div class="session-wrapper">
+            <app-exercise-session [exercises]="jobExercises" />
+          </div>
+        }
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>

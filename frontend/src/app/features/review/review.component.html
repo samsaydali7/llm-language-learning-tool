@@ -1,0 +1,50 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Review mistakes</h1>
+      <p>Everything you've answered incorrectly, connected back to its vocabulary, grammar, or expression.</p>
+    </div>
+    <mat-form-field appearance="outline" class="lang-select">
+      <mat-label>Language</mat-label>
+      <mat-select [(ngModel)]="languageId" (selectionChange)="load()">
+        @for (language of languages; track language.id) {
+          <mat-option [value]="language.id">{{ language.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <div class="card">
+    @if (failures.length === 0) {
+      <div class="empty-state">
+        <mat-icon>emoji_events</mat-icon>
+        <p>No mistakes recorded yet for this language - nice work, or you haven't attempted any exercises.</p>
+      </div>
+    } @else {
+      <div class="toolbar">
+        <button mat-stroked-button (click)="selectAll()">Select all</button>
+        <button mat-flat-button color="primary" (click)="practiceSelected()" [disabled]="generating">
+          <mat-icon>refresh</mat-icon> Practice {{ selected.size || failures.length }} item(s)
+        </button>
+      </div>
+      <div class="failure-list">
+        @for (failure of failures; track failure.knowledgeItemId) {
+          <label class="failure-row">
+            <mat-checkbox [checked]="selected.has(failure.knowledgeItemId)" (change)="toggle(failure.knowledgeItemId)" />
+            <span class="tag">{{ failure.type }}</span>
+            <strong>{{ failure.headword }}</strong>
+            <span class="muted">{{ failure.summary }}</span>
+            <span class="failure-row__count">{{ failure.timesFailed }}x missed</span>
+          </label>
+        }
+      </div>
+    }
+  </div>
+
+  @if (practiceExercises) {
+    <div class="card">
+      <h3>Practice session</h3>
+      <app-exercise-session [exercises]="practiceExercises" />
+    </div>
+  }
+</div>

@@ -1,0 +1,66 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Grammar review</h1>
+      <p>Grammar points you've gotten wrong more often surface first.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <app-study-scope-selector (scopeChange)="onScopeChange($event)" />
+    <button mat-flat-button color="primary" class="load-btn" (click)="loadPoints()" [disabled]="!scope.languageId || loadingPoints">
+      <mat-icon>search</mat-icon> Find grammar points
+    </button>
+    @if (loadingPoints) {
+      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    }
+  </div>
+
+  @if (points.length) {
+    <div class="layout">
+      <div class="card point-list">
+        @for (point of points; track point.id) {
+          <button class="point-item" [class.point-item--active]="selectedPoint?.id === point.id" (click)="select(point)">
+            {{ point.title }}
+          </button>
+        }
+      </div>
+      <div class="card review-panel">
+        @if (loadingReview) {
+          <p class="muted">Asking the model for a fresh review...</p>
+        } @else if (!review) {
+          <div class="empty-state">
+            <mat-icon>auto_stories</mat-icon>
+            <p>Select a grammar point to see its review.</p>
+          </div>
+        } @else {
+          <h3>{{ selectedPoint?.title }}</h3>
+          <p>{{ review.summary }}</p>
+
+          @if (review.keyPoints.length) {
+            <h4>Key points</h4>
+            <ul>
+              @for (point of review.keyPoints; track point) { <li>{{ point }}</li> }
+            </ul>
+          }
+
+          @if (review.commonMistakes.length) {
+            <h4>Common mistakes</h4>
+            <ul>
+              @for (mistake of review.commonMistakes; track mistake) { <li>{{ mistake }}</li> }
+            </ul>
+          }
+
+          @if (review.reinforcementExamples.length) {
+            <h4>More examples</h4>
+            <ul>
+              @for (example of review.reinforcementExamples; track example.text) {
+                <li>{{ example.text }} @if (example.translation) { <span class="muted">- {{ example.translation }}</span> }</li>
+              }
+            </ul>
+          }
+        }
+      </div>
+    </div>
+  }
+</div>

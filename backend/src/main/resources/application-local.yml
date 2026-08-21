@@ -1,0 +1,11 @@
+# Profile used when running the backend jar directly on the host (not in Docker Compose),
+# with Postgres/RabbitMQ port-mapped to localhost and Ollama running natively.
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/${DB_NAME:language_learning}
+  rabbitmq:
+    host: localhost
+
+llm:
+  ollama:
+    base-url: ${OLLAMA_BASE_URL:http://localhost:11434}

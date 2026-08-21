@@ -1,0 +1,32 @@
+.lang-select {
+  width: 220px;
+}
+
+.toolbar {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.failure-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.failure-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  cursor: pointer;
+
+  &__count {
+    margin-left: auto;
+    font-size: 0.8rem;
+    color: var(--danger);
+    font-weight: 600;
+  }
+}

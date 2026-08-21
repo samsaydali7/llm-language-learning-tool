@@ -1,0 +1,44 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Languages</h1>
+      <p>Add every language you're learning. Each one keeps its own books, topics, and knowledge base.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Add a language</h3>
+    <form class="add-form" (ngSubmit)="create()">
+      <mat-form-field appearance="outline">
+        <mat-label>Code</mat-label>
+        <input matInput placeholder="fr" [(ngModel)]="code" name="code" maxlength="16" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Name</mat-label>
+        <input matInput placeholder="French" [(ngModel)]="name" name="name" />
+      </mat-form-field>
+      <button mat-flat-button color="primary" type="submit" [disabled]="saving || !code.trim() || !name.trim()">
+        <mat-icon>add</mat-icon> Add language
+      </button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Your languages</h3>
+    @if (languages.length === 0) {
+      <div class="empty-state">
+        <mat-icon>translate</mat-icon>
+        <p>No languages yet. Add one above to get started.</p>
+      </div>
+    } @else {
+      <div class="language-list">
+        @for (language of languages; track language.id) {
+          <div class="language-row">
+            <span class="tag">{{ language.code }}</span>
+            <span>{{ language.name }}</span>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>

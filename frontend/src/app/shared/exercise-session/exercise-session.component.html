@@ -1,0 +1,51 @@
+@if (exercises.length === 0) {
+  <div class="empty-state">
+    <mat-icon>edit_note</mat-icon>
+    <p>No exercises to show.</p>
+  </div>
+} @else if (!current) {
+  <div class="session-done">
+    <mat-icon>emoji_events</mat-icon>
+    <h3>Session complete</h3>
+    <p>{{ correctCount }} / {{ answeredCount }} correct</p>
+  </div>
+} @else {
+  <div class="session">
+    <div class="session__progress muted">Exercise {{ index + 1 }} of {{ exercises.length }} &middot; {{ current.type | lowercase }}</div>
+    <p class="session__prompt">{{ current.prompt }}</p>
+
+    @if (!result) {
+      @if (isChoiceType && current.options.length) {
+        <mat-radio-group [(ngModel)]="answer" class="session__options">
+          @for (option of current.options; track option) {
+            <mat-radio-button [value]="option">{{ option }}</mat-radio-button>
+          }
+        </mat-radio-group>
+      } @else {
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Your answer</mat-label>
+          <input matInput [(ngModel)]="answer" (keyup.enter)="submit()" />
+        </mat-form-field>
+      }
+      <button mat-flat-button color="primary" (click)="submit()" [disabled]="!answer.trim() || submitting">
+        Submit
+      </button>
+    } @else {
+      <div class="session__result" [class.session__result--correct]="result.correct">
+        <mat-icon>{{ result.correct ? 'check_circle' : 'cancel' }}</mat-icon>
+        <div>
+          <strong>{{ result.correct ? 'Correct!' : 'Not quite.' }}</strong>
+          @if (!result.correct) {
+            <p>Correct answer: {{ result.correctAnswer }}</p>
+          }
+          @if (result.explanation) {
+            <p class="muted">{{ result.explanation }}</p>
+          }
+        </div>
+      </div>
+      <button mat-flat-button color="primary" (click)="next()">
+        {{ index + 1 < exercises.length ? 'Next' : 'Finish' }}
+      </button>
+    }
+  </div>
+}

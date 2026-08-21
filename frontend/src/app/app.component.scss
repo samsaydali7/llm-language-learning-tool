@@ -1,0 +1,34 @@
+.shell {
+  height: 100vh;
+
+  &__nav {
+    width: 260px;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface-1);
+    border-right: 1px solid var(--border-subtle);
+  }
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 1.25rem 1.25rem 1rem;
+    font-weight: 600;
+    font-size: 1.05rem;
+    color: var(--brand);
+  }
+
+  &__content {
+    background: var(--surface-0);
+  }
+}
+
+.active-link {
+  background: var(--brand-tint);
+  color: var(--brand);
+
+  mat-icon {
+    color: var(--brand);
+  }
+}

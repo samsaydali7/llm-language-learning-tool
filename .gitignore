@@ -5,10 +5,12 @@
 target/
 node_modules/
 dist/
+.angular/
 
 # Runtime data if bind-mounted locally
 postgres_data/
 rabbitmq_data/
+backend/data/
 # OS/editor files
 .DS_Store
 .idea/
