@@ -1,0 +1,76 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Listening</h1>
+      <p>Play a track alongside its transcript, then practice with a few simple comprehension exercises.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="field-grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Language</mat-label>
+        <mat-select [(ngModel)]="languageId" (selectionChange)="onLanguageChange()">
+          @for (language of languages; track language.id) {
+            <mat-option [value]="language.id">{{ language.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Book</mat-label>
+        <mat-select [(ngModel)]="bookId" (selectionChange)="onBookChange()" [disabled]="!languageId">
+          @for (book of books; track book.id) {
+            <mat-option [value]="book.id">{{ book.title }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+    </div>
+  </div>
+
+  @if (bookId) {
+    <div class="card">
+      @if (tracks.length === 0) {
+        <div class="empty-state">
+          <mat-icon>headphones</mat-icon>
+          <p>No audio uploaded for this book yet.</p>
+        </div>
+      } @else {
+        <div class="track-layout">
+          <div class="track-list">
+            @for (track of tracks; track track.id) {
+              <button class="track-item" [class.track-item--active]="selectedTrack?.id === track.id" (click)="selectTrack(track)">
+                <mat-icon>play_circle</mat-icon> {{ track.originalFilename }}
+              </button>
+            }
+          </div>
+          <div class="track-detail">
+            @if (!selectedTrack) {
+              <div class="empty-state">
+                <mat-icon>touch_app</mat-icon>
+                <p>Select a track to play it.</p>
+              </div>
+            } @else {
+              <audio [src]="streamUrl(selectedTrack)" controls class="full-width"></audio>
+              @if (transcript) {
+                <div class="transcript">{{ transcript }}</div>
+              } @else {
+                <p class="muted">No transcript located for this track.</p>
+              }
+              <button mat-flat-button color="primary" (click)="generateExercises()" [disabled]="generating">
+                <mat-icon>quiz</mat-icon> Generate listening exercises
+              </button>
+              @if (generating) {
+                <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+              }
+              @if (exercises) {
+                <div class="session-wrapper">
+                  <app-exercise-session [exercises]="exercises" />
+                </div>
+              }
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

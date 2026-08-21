@@ -1,0 +1,56 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Topics</h1>
+      <p>Study by topic instead of by chapter order. Topics are discovered from your content, not a fixed list.</p>
+    </div>
+    <mat-form-field appearance="outline" class="lang-select">
+      <mat-label>Language</mat-label>
+      <mat-select [(ngModel)]="languageId" (selectionChange)="loadTopics()">
+        @for (language of languages; track language.id) {
+          <mat-option [value]="language.id">{{ language.name }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+
+  <div class="card">
+    @if (topics.length === 0) {
+      <div class="empty-state">
+        <mat-icon>sell</mat-icon>
+        <p>No topics discovered yet for this language. Upload and process a book first.</p>
+      </div>
+    } @else {
+      <mat-chip-listbox>
+        @for (topic of topics; track topic.id) {
+          <mat-chip-option [selected]="selectedTopic?.id === topic.id" (click)="selectTopic(topic)">
+            {{ topic.name }}
+          </mat-chip-option>
+        }
+      </mat-chip-listbox>
+    }
+  </div>
+
+  @if (selectedTopic) {
+    <div class="card">
+      <h3>{{ selectedTopic.name }}</h3>
+      @if (loadingItems) {
+        <p class="muted">Loading...</p>
+      } @else if (items.length === 0) {
+        <p class="muted">No knowledge items tagged with this topic.</p>
+      } @else {
+        <div class="item-list">
+          @for (item of items; track item.id) {
+            <div class="item">
+              <div class="item__head">
+                <span class="tag">{{ item.type }}</span>
+                <strong>{{ item.headword }}</strong>
+              </div>
+              @if (item.summary) { <p>{{ item.summary }}</p> }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

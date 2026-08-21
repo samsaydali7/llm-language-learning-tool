@@ -225,33 +225,106 @@ cp .env.example .env
 docker compose up -d postgres rabbitmq open-webui
 ```
 
-Open the model UI at [http://localhost:3000](http://localhost:3000). Open WebUI is a development and operator interface for testing Ollama models; it is separate from the planned Angular application.
+Open the model UI at [http://localhost:3000](http://localhost:3000). Open WebUI is a development and operator interface for testing Ollama models; it is separate from the Angular application described below.
 
-The default model routing is configurable through `.env`:
+The default model routing is configurable through `.env` (see `.env.example` for the full list):
 
 ```env
+EXTRACTION_PROVIDER=qwen
 EXTRACTION_MODEL=qwen3:8b
+EXERCISE_PROVIDER=llama
 EXERCISE_MODEL=llama3.2:3b
+GRAMMAR_REVIEW_PROVIDER=llama
+GRAMMAR_REVIEW_MODEL=llama3.2:3b
 ```
 
 The extraction and exercise workloads are deliberately separated. A stronger or cloud-backed provider can later be selected for extraction when quality justifies its cost, while a local model can continue handling high-volume exercise generation. Changing that routing should not require changing application code.
 
 Claude, if added later, would be integrated as a separate Anthropic provider. It cannot be accessed through Ollama because it is a hosted model. This would allow Claude to handle quality-sensitive extraction while local Ollama models handle frequent exercise generation. The default V1 workflow remains local and does not require an external API key.
 
-The application services are not included yet; this Compose file provides the supporting database, job broker, and model testing UI, while Ollama runs natively on the host.
-
-The Compose configuration maps `host.docker.internal` to the host gateway so Open WebUI can reach native Ollama on macOS, Linux, or Windows.
+The Compose configuration maps `host.docker.internal` to the host gateway so Open WebUI (and the backend) can reach native Ollama on macOS, Linux, or Windows.
 
 For browser-based model testing, see the [Open WebUI guide](docs/open-webui.md).
 
-## Repository Documents
+## Running the Full Application
 
-This repository currently contains the core planning documents:
+The application itself (Spring Boot backend + Angular frontend) lives in [backend/](backend/) and [frontend/](frontend/). With Ollama running natively (steps 1-2 above) and its models pulled:
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+```
+
+This starts Postgres, RabbitMQ, Open WebUI, the backend API, and the frontend together. Open the app at [http://localhost:8081](http://localhost:8081). The backend API is also reachable directly at [http://localhost:8080/api](http://localhost:8080/api) if useful for debugging.
+
+`--build` only needs to run the first time, or after you change backend/frontend code - for every other start (including after a reboot, if the containers didn't already come back up on their own) plain `docker compose up -d` is enough and is faster since it skips rebuilding images:
+
+```bash
+docker compose up -d
+```
+
+To stop everything (data is preserved - see "Data Persistence" below):
+
+```bash
+docker compose stop      # stop containers, keep them around to restart quickly
+# or
+docker compose down      # stop and remove containers (volumes/data untouched)
+```
+
+### Running backend and frontend natively instead
+
+Useful for active development, where rebuilding a Docker image on every change is slow.
+
+```bash
+# Supporting services only
+docker compose up -d postgres rabbitmq
+
+# Backend (JDK 21 required; the Maven wrapper needs no local Maven install)
+cd backend
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+
+# Frontend, in another terminal
+cd frontend
+npm install
+npm start
+```
+
+The frontend dev server proxies `/api` to `http://localhost:8080` (see `frontend/proxy.conf.json`), so open [http://localhost:4200](http://localhost:4200).
+
+### First use
+
+1. Add a language (e.g. code `fr`, name `French`).
+2. Add a book under that language, with the explanation language you want (e.g. `en`).
+3. Upload the book's PDF - this kicks off an async job that detects its structure (chapters/sections) and then extracts vocabulary, grammar, expressions, examples, and topics section by section.
+4. Upload the book's audio files - references like "Track 12" found in the text are matched to uploaded files automatically where possible; anything unmatched can be linked manually.
+5. Browse the book's structure and topics once extraction completes, then use Exercises, Flashcards, Listening, and Grammar review to study, and Review mistakes to revisit what you've gotten wrong.
+
+### Data Persistence
+
+Postgres, RabbitMQ, Open WebUI, and the backend's uploaded PDFs/audio each write to a named Docker volume (`postgres_data`, `rabbitmq_data`, `open_webui_data`, `backend_storage` in `docker-compose.yml`). Named volumes live on disk independently of any container, so your data survives:
+
+- `docker compose stop` / `docker compose restart`
+- `docker compose down` (stops and removes the *containers*, not the volumes)
+- a full host restart, once Docker is running again
+
+All services also run with `restart: unless-stopped`, so after Docker itself restarts (e.g. following a host reboot) they come back up on their own - just make sure Docker Desktop (or your Docker daemon) is set to start automatically if you want that to happen without manual intervention.
+
+**The one command that does delete your data is `docker compose down -v`** (or `docker volume rm`/`docker volume prune`) - the `-v` flag removes volumes along with the containers. Avoid it unless you specifically want to wipe the database and start over.
+
+To back up your data, copy the volumes' contents (e.g. `docker run --rm -v llm-language-learning-tool_postgres_data:/data -v $(pwd):/backup alpine tar czf /backup/postgres_backup.tar.gz -C /data .`) or use `pg_dump` against the running `postgres` container.
+
+### Backend architecture at a glance
+
+The backend is organized by domain (`language`, `book`, `structure`, `storage`, `audio`, `knowledge`, `topic`, `extraction`, `llm`, `scope`, `exercise`, `flashcard`, `listening`, `grammar`, `attempt`, `job`), each following the same `entity/ repository/ service/ api/` shape. The `llm` package holds the `LlmProvider` abstraction (SPEC.md #7) exactly as specified, with `QwenProvider` and `LlamaProvider` both delegating to a shared `OllamaClient`, a stubbed `ClaudeProvider` seam for a future Anthropic integration, and an `LlmRouter` that resolves provider + model per workload from the `llm.*` config (SPEC.md #8) - application code never depends on a concrete provider. PDF structure detection reads the PDF's own outline/bookmarks first, falling back to a font-size heuristic when a PDF has none; only the knowledge-extraction step (vocabulary/grammar/expressions/examples/topics within a section) calls the LLM. Structure and knowledge extraction, and job-based exercise generation, all run asynchronously through RabbitMQ (SPEC.md #2.1); on-demand exercise generation and flashcards run synchronously, sharing the same `scope/KnowledgeQueryService` and `exercise/ExerciseGenerationService` pipeline either way (SPEC.md #2.3).
+
+## Repository Documents
 
 - [REQUIREMENTS.md](REQUIREMENTS.md) — product requirements for V1
 - [SPEC.md](SPEC.md) — technical specification and system design
 - [docs/ollama.md](docs/ollama.md) — native Ollama runtime guide
 - [docs/open-webui.md](docs/open-webui.md) — browser UI for testing local models
+- [backend/](backend/) — Spring Boot API, knowledge extraction pipeline, and LLM provider abstraction
+- [frontend/](frontend/) — Angular application (books, structure browsing, exercises, flashcards, listening, grammar review, mistake review)
 
 ## Portfolio Framing
 
@@ -270,7 +343,7 @@ It is a good fit for a portfolio because it shows understanding of the systems s
 
 ## Status
 
-V1 planning is complete and the project is being prepared as a public repository with a minimal, focused documentation set.
+V1 is implemented and has been run end-to-end (PDF upload → async structure and knowledge extraction against a real Ollama instance → browsing → both exercise-generation modes → attempts/failure tracking → flashcards → listening → audio-reference matching), plus a production Angular build and the backend's automated test suite (`cd backend && mvn test`) all passing. See "Running the Full Application" above to run it yourself.
 
 ## Intended Outcome
 

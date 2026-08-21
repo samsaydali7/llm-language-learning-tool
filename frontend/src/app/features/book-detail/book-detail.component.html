@@ -1,0 +1,131 @@
+@if (book) {
+  <div class="page">
+    <div class="page-header">
+      <div>
+        <a routerLink="/books" class="back-link"><mat-icon>arrow_back</mat-icon> Books</a>
+        <h1>{{ book.title }}</h1>
+        <p>{{ book.languageName }} &middot; explanations in {{ book.explanationLanguageCode }}</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Source material</h3>
+      <div class="uploads">
+        <div class="uploads__item">
+          <div>
+            <strong>PDF</strong>
+            <p class="muted">
+              @if (book.hasPdf) { {{ book.pdfPageCount }} pages uploaded } @else { Not uploaded yet }
+            </p>
+          </div>
+          <button mat-stroked-button (click)="pdfInput.click()" [disabled]="uploadingPdf">
+            <mat-icon>upload_file</mat-icon> {{ book.hasPdf ? 'Replace PDF' : 'Upload PDF' }}
+          </button>
+          <input #pdfInput type="file" accept="application/pdf" hidden (change)="onPdfSelected($event)" />
+        </div>
+
+        <div class="uploads__item">
+          <div>
+            <strong>Audio</strong>
+            <p class="muted">{{ audioFiles.length }} track(s) uploaded</p>
+          </div>
+          <button mat-stroked-button (click)="audioInput.click()" [disabled]="uploadingAudio">
+            <mat-icon>upload_file</mat-icon> Upload audio
+          </button>
+          <input #audioInput type="file" accept="audio/*" multiple hidden (change)="onAudioSelected($event)" />
+        </div>
+      </div>
+
+      @if (latestJob) {
+        <div class="job-status">
+          <span class="status-pill" [class]="latestJob.status.toLowerCase()">{{ latestJob.status }}</span>
+          <span class="muted">Stage: {{ latestJob.stage }}</span>
+          @if (latestJob.totalSections) {
+            <span class="muted">{{ latestJob.completedSections ?? 0 }} / {{ latestJob.totalSections }} sections</span>
+          }
+          @if (latestJob.status === 'RUNNING' || latestJob.status === 'PENDING') {
+            <mat-progress-bar mode="indeterminate" class="job-status__bar"></mat-progress-bar>
+          }
+          @if (latestJob.errorMessage) {
+            <span class="muted">{{ latestJob.errorMessage }}</span>
+          }
+        </div>
+      }
+    </div>
+
+    @if (structureRoots.length) {
+      <div class="card">
+        <h3>Structure &amp; knowledge base</h3>
+        <div class="browser">
+          <div class="browser__tree">
+            @for (root of structureRoots; track root.id) {
+              <app-structure-browser-node [node]="root" [selectedId]="selectedNode?.id ?? null" (select)="onSelectNode($event)" />
+            }
+          </div>
+          <div class="browser__detail">
+            @if (!selectedNode) {
+              <div class="empty-state">
+                <mat-icon>account_tree</mat-icon>
+                <p>Select a chapter or section to see its vocabulary, grammar, and expressions.</p>
+              </div>
+            } @else {
+              <h4>{{ selectedNode.title }}</h4>
+              @if (loadingItems) {
+                <p class="muted">Loading...</p>
+              } @else if (selectedNodeItems.length === 0) {
+                <p class="muted">No knowledge items extracted for this section yet.</p>
+              } @else {
+                <div class="item-list">
+                  @for (item of selectedNodeItems; track item.id) {
+                    <div class="item">
+                      <div class="item__head">
+                        <span class="tag">{{ item.type }}</span>
+                        <strong>{{ item.headword }}</strong>
+                        @if (item.page) { <span class="muted">p.{{ item.page }}</span> }
+                      </div>
+                      @if (item.summary) { <p>{{ item.summary }}</p> }
+                      @if (item.examples.length) {
+                        <ul class="item__examples">
+                          @for (example of item.examples; track example.text) {
+                            <li>{{ example.text }} @if (example.translation) { <span class="muted">- {{ example.translation }}</span> }</li>
+                          }
+                        </ul>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (audioReferences.length) {
+      <div class="card">
+        <h3>Audio references</h3>
+        <p class="muted">Markers like "Track 12" found in the text, matched to your uploaded audio where possible.</p>
+        <div class="reference-list">
+          @for (reference of audioReferences; track reference.id) {
+            <div class="reference-row">
+              <span class="tag">{{ reference.label }}</span>
+              <span class="muted">p.{{ reference.page }}</span>
+              @if (reference.audioFileName) {
+                <span class="reference-row__matched"><mat-icon inline>check_circle</mat-icon> {{ reference.audioFileName }}</span>
+              } @else {
+                <mat-form-field appearance="outline" class="reference-row__select">
+                  <mat-label>Link to file</mat-label>
+                  <mat-select (selectionChange)="linkReference(reference, $event.value)">
+                    @for (file of audioFiles; track file.id) {
+                      <mat-option [value]="file.id">{{ file.originalFilename }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+}

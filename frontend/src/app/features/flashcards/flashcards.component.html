@@ -1,0 +1,51 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Flashcards</h1>
+      <p>Instant decks built straight from your knowledge base - no waiting on a model.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <app-study-scope-selector (scopeChange)="onScopeChange($event)" />
+    <button mat-flat-button color="primary" class="generate-btn" (click)="generate()" [disabled]="!scope.languageId || loading">
+      <mat-icon>style</mat-icon> Build deck
+    </button>
+  </div>
+
+  @if (deck.length) {
+    <div class="card deck-card">
+      @if (current) {
+        <div class="counter muted">Card {{ index + 1 }} of {{ deck.length }}</div>
+        <div class="flashcard" [class.flashcard--flipped]="flipped" (click)="flip()">
+          <div class="flashcard__face flashcard__front">
+            <span class="tag">{{ current.type }}</span>
+            <p>{{ current.front }}</p>
+          </div>
+          <div class="flashcard__face flashcard__back">
+            <p>{{ current.back }}</p>
+            @if (current.exampleText) {
+              <p class="muted">{{ current.exampleText }}</p>
+            }
+          </div>
+        </div>
+        <div class="controls">
+          <button mat-stroked-button (click)="previous()" [disabled]="index === 0">
+            <mat-icon>chevron_left</mat-icon> Previous
+          </button>
+          <button mat-stroked-button (click)="flip()">Flip</button>
+          <button mat-stroked-button (click)="next()" [disabled]="index === deck.length - 1">
+            Next <mat-icon>chevron_right</mat-icon>
+          </button>
+        </div>
+      }
+    </div>
+  } @else if (!loading) {
+    <div class="card">
+      <div class="empty-state">
+        <mat-icon>style</mat-icon>
+        <p>Choose a scope above and build a deck to start studying.</p>
+      </div>
+    </div>
+  }
+</div>

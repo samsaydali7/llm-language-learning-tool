@@ -1,0 +1,62 @@
+<div class="page">
+  <div class="page-header">
+    <div>
+      <h1>Books</h1>
+      <p>A book is a PDF plus its associated audio, treated as one learning source. Only add material you own or are authorized to use.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Add a book</h3>
+    <form class="add-form" (ngSubmit)="create()">
+      <mat-form-field appearance="outline">
+        <mat-label>Language</mat-label>
+        <mat-select [(ngModel)]="languageId" name="languageId">
+          @for (language of languages; track language.id) {
+            <mat-option [value]="language.id">{{ language.name }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Title</mat-label>
+        <input matInput placeholder="French for Dummies - Book 2" [(ngModel)]="title" name="title" />
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Explanation language code</mat-label>
+        <input matInput placeholder="en" [(ngModel)]="explanationLanguageCode" name="explanationLanguageCode" />
+      </mat-form-field>
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Description (optional)</mat-label>
+        <input matInput [(ngModel)]="description" name="description" />
+      </mat-form-field>
+      <button mat-flat-button color="primary" type="submit"
+              [disabled]="saving || !languageId || !title.trim()">
+        <mat-icon>add</mat-icon> Add book
+      </button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Your books</h3>
+    @if (books.length === 0) {
+      <div class="empty-state">
+        <mat-icon>menu_book</mat-icon>
+        <p>No books yet. Add one above, then upload its PDF and audio.</p>
+      </div>
+    } @else {
+      <div class="book-grid">
+        @for (book of books; track book.id) {
+          <a class="book-card" [routerLink]="['/books', book.id]">
+            <div class="book-card__title">{{ book.title }}</div>
+            <div class="muted">{{ book.languageName }}</div>
+            @if (book.hasPdf) {
+              <span class="tag">{{ book.pdfPageCount }} pages</span>
+            } @else {
+              <span class="tag" style="background:#fff4e0; color:#9a6400;">No PDF yet</span>
+            }
+          </a>
+        }
+      </div>
+    }
+  </div>
+</div>
