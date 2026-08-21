@@ -1,0 +1,7 @@
+com/languagelearning/llm/LlmProvider.class
+com/languagelearning/LanguageLearningApplication.class
+com/languagelearning/api/LlmController$GenerateResponse.class
+com/languagelearning/llm/OllamaProvider.class
+com/languagelearning/api/LlmController$GenerateRequest.class
+com/languagelearning/api/LlmController$ModelsResponse.class
+com/languagelearning/api/LlmController.class
