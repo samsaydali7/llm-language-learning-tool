@@ -261,9 +261,11 @@ LlmProvider
     |
     +-- LlamaProvider
     |
-    +-- ClaudeProvider (future)
+    +-- ClaudeProvider (future, Anthropic API)
 
 This design enables model specialization by workload, rather than forcing the same model or provider to handle every stage.
+
+Claude cannot be accessed through Ollama. Claude is a hosted Anthropic model and requires a separate provider integration, internet access, and an Anthropic API key. Ollama remains the provider for locally installed models such as Qwen and Llama.
 
 ## 8. Model Routing
 
@@ -279,11 +281,26 @@ llm:
 
   exercises:
     provider: llama
-    model: llama3.1:8b
+    model: llama3.2:3b
 
 
   grammar-review:
     provider: llama
-    model: llama3.1:8b
+        model: llama3.2:3b
 
 The configuration must be changeable by environment or deployment. For example, extraction may be moved to a more capable model or external provider in a high-quality setup, while local Llama remains the exercise model for privacy and lower cost. The application must treat this as a runtime configuration concern, not as hard-coded business logic.
+
+Example mixed routing:
+
+```yaml
+llm:
+    extraction:
+        provider: claude
+        model: claude-sonnet
+
+    exercises:
+        provider: ollama
+        model: llama3.2:3b
+```
+
+This configuration uses Claude for potentially higher-quality extraction and a local Ollama model for frequent exercise generation. Claude access must remain optional; the default V1 workflow must continue to work without an external LLM API.

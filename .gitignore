@@ -1,0 +1,10 @@
+# Local environment overrides
+.env
+
+# Runtime data if bind-mounted locally
+postgres_data/
+rabbitmq_data/
+# OS/editor files
+.DS_Store
+.idea/
+.vscode/

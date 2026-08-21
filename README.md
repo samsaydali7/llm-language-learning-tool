@@ -174,11 +174,75 @@ The project is intended to remain local-first and model-agnostic at the service 
 
 Core design principles:
 
-- no hard dependency on a single model vendor
-- local execution only for V1
-- simple provider abstraction for extraction and exercise generation
-- configurable model routing
-- modern deployment via Docker Compose
+
+## Local AI Stack
+
+The repository uses Ollama natively on the developer host for local model execution. Docker runs the supporting services and Open WebUI:
+
+```text
+Docker Compose
+  |
+  +--> PostgreSQL       structured knowledge and review data
+  +--> RabbitMQ         asynchronous extraction and exercise jobs
+  +--> Open WebUI       browser UI for testing local models
+         |
+         v
+  Native Ollama :11434
+         |
+         +--> Qwen extraction model
+         +--> Llama exercise model
+```
+
+## Full Local Setup
+
+### 1. Install Ollama
+
+Install Ollama for your operating system using the [official Ollama download page](https://ollama.com/download). Supported installation paths include macOS, Linux, and Windows.
+
+Verify the installation:
+
+```bash
+ollama --version
+```
+
+### 2. Start Ollama
+
+```bash
+ollama serve
+```
+
+In another terminal, download the configured models:
+
+```bash
+ollama pull qwen3:8b
+ollama pull llama3.2:3b
+```
+
+### 3. Configure the Docker services
+
+```bash
+cp .env.example .env
+docker compose up -d postgres rabbitmq open-webui
+```
+
+Open the model UI at [http://localhost:3000](http://localhost:3000). Open WebUI is a development and operator interface for testing Ollama models; it is separate from the planned Angular application.
+
+The default model routing is configurable through `.env`:
+
+```env
+EXTRACTION_MODEL=qwen3:8b
+EXERCISE_MODEL=llama3.2:3b
+```
+
+The extraction and exercise workloads are deliberately separated. A stronger or cloud-backed provider can later be selected for extraction when quality justifies its cost, while a local model can continue handling high-volume exercise generation. Changing that routing should not require changing application code.
+
+Claude, if added later, would be integrated as a separate Anthropic provider. It cannot be accessed through Ollama because it is a hosted model. This would allow Claude to handle quality-sensitive extraction while local Ollama models handle frequent exercise generation. The default V1 workflow remains local and does not require an external API key.
+
+The application services are not included yet; this Compose file provides the supporting database, job broker, and model testing UI, while Ollama runs natively on the host.
+
+The Compose configuration maps `host.docker.internal` to the host gateway so Open WebUI can reach native Ollama on macOS, Linux, or Windows.
+
+For browser-based model testing, see the [Open WebUI guide](docs/open-webui.md).
 
 ## Repository Documents
 
@@ -186,6 +250,8 @@ This repository currently contains the core planning documents:
 
 - [REQUIREMENTS.md](REQUIREMENTS.md) — product requirements for V1
 - [SPEC.md](SPEC.md) — technical specification and system design
+- [docs/ollama.md](docs/ollama.md) — native Ollama runtime guide
+- [docs/open-webui.md](docs/open-webui.md) — browser UI for testing local models
 
 ## Portfolio Framing
 
