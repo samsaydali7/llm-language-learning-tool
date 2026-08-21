@@ -1,11 +1,6 @@
 # Local environment overrides
 .env
 
-# Build outputs and dependencies
-target/
-node_modules/
-dist/
-
 # Runtime data if bind-mounted locally
 postgres_data/
 rabbitmq_data/
