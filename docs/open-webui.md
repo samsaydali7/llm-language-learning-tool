@@ -12,7 +12,7 @@ It provides a ChatGPT-style workspace where you can:
 - compare model behavior
 - manage local model conversations
 
-In this project, Open WebUI is a development and operator interface for testing Ollama models. The project’s Angular frontend is the product UI for the structured learning workflow.
+In this project, Open WebUI is a development and operator interface for testing Ollama models. It is not the product UI described by the Angular frontend architecture.
 
 ## How It Fits the System
 
@@ -46,8 +46,6 @@ Angular + Spring Boot application
   Exercise generation
   Review and failure tracking
 ```
-
-The V1 Angular model playground is available at [http://localhost:4200](http://localhost:4200). Use Open WebUI for unrestricted model experiments and the application UI for requests routed through the project API.
 
 ## Starting Open WebUI
 

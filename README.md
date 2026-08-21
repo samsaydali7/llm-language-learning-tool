@@ -223,12 +223,9 @@ ollama pull llama3.2:3b
 ```bash
 cp .env.example .env
 docker compose up -d postgres rabbitmq open-webui
-docker compose up -d backend frontend
 ```
 
 Open the model UI at [http://localhost:3000](http://localhost:3000). Open WebUI is a development and operator interface for testing Ollama models; it is separate from the planned Angular application.
-
-Open the V1 application at [http://localhost:4200](http://localhost:4200). The Angular UI discovers models through the Spring Boot API and sends bounded generation requests to native Ollama.
 
 The default model routing is configurable through `.env`:
 
@@ -241,7 +238,7 @@ The extraction and exercise workloads are deliberately separated. A stronger or 
 
 Claude, if added later, would be integrated as a separate Anthropic provider. It cannot be accessed through Ollama because it is a hosted model. This would allow Claude to handle quality-sensitive extraction while local Ollama models handle frequent exercise generation. The default V1 workflow remains local and does not require an external API key.
 
-The V1 application services are containerized here: Spring Boot provides the API and Ollama integration, while Angular provides the model playground. PostgreSQL and RabbitMQ are ready for the next persistence and job-processing slices.
+The application services are not included yet; this Compose file provides the supporting database, job broker, and model testing UI, while Ollama runs natively on the host.
 
 The Compose configuration maps `host.docker.internal` to the host gateway so Open WebUI can reach native Ollama on macOS, Linux, or Windows.
 
